@@ -1,0 +1,18 @@
+# Step 1: Build the image
+docker build -t gpu-factory-test .
+
+# Step 2: Run it
+docker run --rm gpu-factory-test
+
+
+
+##  Directory Structure Assumed
+
+gpu-java-testsuite/
+├── pom.xml
+├── Dockerfile
+└── src/
+    └── main/
+        └── java/
+            └── com/amd/validation/...
+

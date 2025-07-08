@@ -9,38 +9,65 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for the {@link TestRunner} class.
+ *
+ * <p>These tests ensure that the validation engine correctly executes registered tasks,
+ * handles edge cases gracefully, and runs tasks in the correct order.</p>
+ */
 class TestRunnerTest {
 
     private TestContext context;
 
+    /**
+     * Initialize a fresh test context before each test.
+     */
     @BeforeEach
     void setUp() {
         context = new TestContext("GPU-001");
     }
 
+    /**
+     * Tests a full validation flow with all known task modules.
+     * Ensures smooth execution and system info population.
+     */
     @Test
     void testValidationFlow() {
-        ValidationTask pcie = new PCIeLinkValidation();
-        ValidationTask thermal = new ThermalMonitorCheck();
+        // Populate dummy metadata into context
+        SystemInfoFetcher.populate(context);
 
-        TestRunner runner = new TestRunner(Arrays.asList(pcie, thermal));
-        runner.runAll(context);
-    }
+        // Register all known validation tasks
+        List<ValidationTask> tasks = List.of(
+            new PCIeLinkValidation(),
+            new ThermalMonitorCheck(),
+            new GpuMemoryUsageValidation(),
+            new FanSpeedValidation(),
+            new PowerConsumptionValidation()
+        );
 
-    @Test
-    void testWithEmptyTaskList() {
-        TestRunner runner = new TestRunner(Collections.emptyList());
+        TestRunner runner = new TestRunner(tasks);
 
+        // Ensure validation completes without exceptions
         assertDoesNotThrow(() -> runner.runAll(context));
     }
 
+    /**
+     * Verifies that the runner does not fail when no tasks are provided.
+     */
+    @Test
+    void testWithEmptyTaskList() {
+        TestRunner runner = new TestRunner(Collections.emptyList());
+        assertDoesNotThrow(() -> runner.runAll(context));
+    }
+
+    /**
+     * Ensures the runner propagates runtime exceptions from faulty tasks.
+     */
     @Test
     void testTaskThatThrowsException() {
-        ValidationTask faultyTask = new ValidationTask() {
-            @Override
-            public ValidationResult execute(TestContext context) {
-                throw new RuntimeException("Simulated failure");
-            }
+        // Create a simulated faulty task
+        ValidationTask faultyTask = context -> {
+            throw new RuntimeException("Simulated failure");
         };
 
         TestRunner runner = new TestRunner(List.of(faultyTask));
@@ -48,6 +75,9 @@ class TestRunnerTest {
         assertThrows(RuntimeException.class, () -> runner.runAll(context));
     }
 
+    /**
+     * Runs validation independently for multiple devices and ensures isolation.
+     */
     @Test
     void testMultipleDevicesIndependently() {
         TestContext device1 = new TestContext("GPU-A1");
@@ -63,6 +93,9 @@ class TestRunnerTest {
         assertDoesNotThrow(() -> runner2.runAll(device2));
     }
 
+    /**
+     * Validates that tasks are executed in the exact order they are registered.
+     */
     @Test
     void testOrderOfExecution() {
         StringBuilder log = new StringBuilder();
@@ -85,5 +118,4 @@ class TestRunnerTest {
 
         assertEquals("Step1;Step2;Step3;", log.toString());
     }
-
 }

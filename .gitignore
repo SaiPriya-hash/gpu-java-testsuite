@@ -1,5 +1,25 @@
-"target/" 
-".idea/" 
-"*.iml" 
-".classpath" 
-".project" 
+cat <<EOF > .gitignore
+# Maven build
+target/
+
+# Eclipse and IntelliJ
+*.iml
+.idea/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Coverage
+jacoco.exec
+site/
+*.html
+
+# Report exports
+reports/
+EOF
